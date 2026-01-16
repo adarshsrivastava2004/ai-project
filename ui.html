@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Orders Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      height: 95vh;
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+
+    .header {
+      padding: 16px;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #38bdf8;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      line-height: 1.4;
+      font-size: 15px;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #2563eb;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot {
+      background: #111827;
+      border: 1px solid #1f2937;
+      color: #e5e7eb;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .input-area {
+      padding: 16px;
+      border-top: 1px solid #1f2937;
+      background: #020617;
+      display: flex;
+      gap: 10px;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      background: #0b1220;
+      color: #e2e8f0;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      outline: none;
+      height: 48px;
+      max-height: 120px;
+    }
+
+    button {
+      background: #38bdf8;
+      border: none;
+      border-radius: 12px;
+      padding: 0 20px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #020617;
+    }
+
+    button:hover { background: #0ea5e9; }
+
+    .typing {
+      font-size: 13px;
+      color: #64748b;
+      margin-left: 6px;
+    }
+
+    .dot::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0% { content: ''; }
+      33% { content: '.'; }
+      66% { content: '..'; }
+      100% { content: '...'; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">AI Orders Assistant</div>
+
+  <div id="messages" class="messages"></div>
+
+  <div class="input-area">
+    <textarea id="input" placeholder="Ask about your orders..." onkeydown="handleKey(event)"></textarea>
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+const messages = document.getElementById('messages');
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function addBubble(role, text) {
+  const div = document.createElement('div');
+  div.className = `bubble ${role}`;
+  div.innerText = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  addBubble('user', message);
+  input.value = '';
+
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.innerHTML = 'Assistant is typing<span class="dot"></span>';
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch('http://127.0.0.1:8000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+
+    const data = await res.json();
+    typing.remove();
+
+    addBubble('bot', data.response || 'No response');
+
+  } catch (err) {
+    typing.remove();
+    addBubble('bot', '❌ Backend not running or API error');
+  }
+}
+</script>
+
+</body>
+</html>
